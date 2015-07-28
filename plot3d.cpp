@@ -9,107 +9,46 @@ Colormap                cmap;
 XSetWindowAttributes    swa;
 XWindowAttributes       wa;
 XEvent                  xev;
-bool terminate = false;
+bool terminate = false, on_gpu = false;
 
 float                   TimeCounter, LastFrameTimeCounter, DT, prevTime = 0.0, FPS;
 struct timeval          tv, tv0;
 int                     Frame = 1, FramesPerFPS;
 
 GLfloat                 rotation_matrix[16];
-float                   rot_z_vel = 0.0, rot_y_vel = 0.0;
+float                   rot_z = 0.0, rot_y = 0.0;
 
-class Model {
-public:
-    int mydimension;
-    float bound;
-    int arraySize;
-    int lengthNeighborhoods;
-    const float* mypoints;
-    std::vector<std::vector<int> >::iterator neighborhoodsBegin;
-    std::vector<std::vector<int> >::iterator neighborhoodsEnd;
-    std::vector<float> colorVector;
-
-    float random(float max);
-
-    Model(const std::vector<float>& points, std::vector<std::vector<int> >& neighborhoods);
-    void draw();
-};
-
-float Model::random(float max) {
-    return float(rand())/float(RAND_MAX)*max;
-}
-
-Model::Model(const std::vector<float>& points, std::vector<std::vector<int> >& neighborhoods)
+/* A simple function that will read a file into an allocated char pointer buffer */
+char* filetobuf(char *file)
 {
-    mypoints = &points[0];
-    arraySize = points.size();
-    bound = *std::max_element(points.begin(), points.end()) - *std::min_element(points.begin(), points.end());
-
-    // set color vector
-    float c1(Model::random(1.f)), c2(Model::random(1.f)), c3(Model::random(1.f));
-    // This is one of many ways to add a color value for root node.
-    for(std::vector<std::vector<int> >::iterator hood = neighborhoods.begin(); hood != neighborhoods.end(); ++ hood)
-    {
-        c1 = Model::random(1.f);
-        c2 = Model::random(1.f);
-        c3 = Model::random(1.f);
-        colorVector.push_back(c1);
-        colorVector.push_back(c2);
-        colorVector.push_back(c3);
-    }
-
-    neighborhoodsBegin = neighborhoods.begin();
-    neighborhoodsEnd = neighborhoods.end();
+    FILE *fptr;
+    long length;
+    char *buf;
+ 
+    fptr = fopen(file, "rb"); /* Open file for reading */
+    if (!fptr) /* Return NULL on failure */
+        return NULL;
+    fseek(fptr, 0, SEEK_END); /* Seek to the end of the file */
+    length = ftell(fptr); /* Find out how many bytes into the file we are */
+    buf = (char*)malloc(length+1); /* Allocate a buffer for the entire length of the file and a null terminator */
+    fseek(fptr, 0, SEEK_SET); /* Go back to the beginning of the file */
+    fread(buf, length, 1, fptr); /* Read the contents of the file in to the buffer */
+    fclose(fptr); /* Close the file */
+    buf[length] = 0; /* Null terminator */
+ 
+    return buf; /* Return the buffer */
 }
-
-
-void Model::draw() {
-    glLineWidth(2.0);
-    glPointSize(1.0);
-    std::vector<std::vector<int> >::iterator hood = neighborhoodsBegin;
-
-    static int hoodToHighlight = 0;
-    glBegin(GL_POINTS);
-    glColor3f(1.f,1.f,1.f);
-    for(; hood != neighborhoodsEnd; ++ hood) {
-        int hoodDistance = std::distance(neighborhoodsBegin, hood);
-        for(std::vector<int>::iterator neighbor = hood->begin(); neighbor != hood->end(); ++neighbor) {
-            glVertex3f(*(mypoints + *neighbor*3),*( mypoints + *neighbor*3+ 1) ,*( mypoints +  *neighbor*3 + 2));
-        }
-    }
-    glEnd();
-
-    hood = neighborhoodsBegin;
-
-    glBegin(GL_LINES);
-    for(; hood != neighborhoodsEnd; ++ hood) {
-        if(std::distance(neighborhoodsBegin, hood) == hoodToHighlight) {
-            int hoodDistance = std::distance(neighborhoodsBegin, hood);
-            glColor3f(colorVector[hoodDistance*3], colorVector[hoodDistance*3 + 1], colorVector[hoodDistance*3 + 2]);
-
-            for(std::vector<int>::iterator neighbor = hood->begin(); neighbor != hood->end(); ++neighbor) {
-                glVertex3f(*(mypoints + hoodDistance*3),*( mypoints + hoodDistance*3 + 1) ,*( mypoints +  hoodDistance*3 + 2));
-                glVertex3f(*(mypoints + *neighbor*3),*( mypoints + *neighbor*3+ 1) ,*( mypoints +  *neighbor*3 + 2));
-            }
-        }
-    }
-    glEnd();
-
-    hoodToHighlight ++;
-    hoodToHighlight = hoodToHighlight % std::distance(neighborhoodsBegin, neighborhoodsEnd);
-}
-
 
 void RotateModel() {
     glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();
-    glRotatef(rot_y_vel*DT, 0.0, 1.0, 0.0);
-    glRotatef(rot_z_vel*DT, 0.0, 0.0, 1.0);
+    glRotatef(.01, 0.0, 1.0, 0.0);
+    glRotatef(.01, 0.0, 0.0, 1.0);
     glMultMatrixf(rotation_matrix);
     glGetFloatv(GL_MODELVIEW_MATRIX, rotation_matrix);
 }
 
-void ExposeFunc(Model & myModel) {
+void ExposeFunc(const int numVertices) {
     float  aspect_ratio;
     char   info_string[256];
 
@@ -127,7 +66,7 @@ void ExposeFunc(Model & myModel) {
     glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();
 
-    float eyeX(float(0.0)), eyeY(float(0.0)), eyeZ(-3.0*myModel.bound);
+    float eyeX(float(0.0)), eyeY(float(0.0)), eyeZ(-300.0);
     float aimX(eyeX), aimY(eyeY), aimZ(0.0);
     float upX(0.f), upY(1.f), upZ(0.f);
 
@@ -136,9 +75,10 @@ void ExposeFunc(Model & myModel) {
 
 //Draw the model
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    myModel.draw();
+    glDrawArrays(GL_LINE_STRIP, 0, numVertices);
 
 //Display graphics system stats
+/*
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
     glOrtho(0, (float)wa.width, 0, (float)wa.height, -1., 1.);
@@ -155,6 +95,7 @@ void ExposeFunc(Model & myModel) {
     sprintf(info_string, "<up,down,left,right> rotate model * <F1> stop rotation ");
     glRasterPos2i(10, wa.height-32);
     glCallLists(strlen(info_string), GL_UNSIGNED_BYTE, info_string);
+*/
 
 //Swap display buffer with draw buffer
     glXSwapBuffers(dpy, win);
@@ -257,22 +198,22 @@ void CheckKeyboard() {
         char    *key_string = XKeysymToString(XkbKeycodeToKeysym(dpy, xev.xkey.keycode, 0, 0));
 
         if(strncmp(key_string, "Left", 4) == 0) {
-            rot_z_vel -= 0.0*DT;
+            rot_z = -45.0;
         }
 
         else if(strncmp(key_string, "Right", 5) == 0) {
-            rot_z_vel += 0.0*DT;
+            rot_z = 45.0;
         }
         else if(strncmp(key_string, "Up", 2) == 0) {
-            rot_y_vel -= 200.0*DT;
+            rot_y = -45.0;
         }
 
         else if(strncmp(key_string, "Down", 4) == 0) {
-            rot_y_vel += 200.0*DT;
+            rot_y = 45.0;
         }
         else if(strncmp(key_string, "F1", 2) == 0) {
-            rot_y_vel = 0.0;
-            rot_z_vel = 0.0;
+            rot_y = 0.0;
+            rot_z = 0.0;
         }
 
         else if(strncmp(key_string, "Escape", 5) == 0) {
@@ -282,20 +223,104 @@ void CheckKeyboard() {
     }
 }
 
-int plotWithNeighborhoods(const std::vector<float>& vertices, std::vector<std::vector<int> >& neighborhoods) {
-    Model myModel(vertices, neighborhoods);
-    CreateWindow();
-    SetupGL();
-    InitTimeCounter();
+void plotCurve(const std::valarray<double>& vertices){
+	CreateWindow();
+	SetupGL();
+	InitTimeCounter();
 
-    while(not terminate) {
-        UpdateTimeCounter();
-        CalculateFPS();
-        RotateModel();
-        ExposeFunc(myModel);
-        usleep(1000);
-        CheckKeyboard();
-    }
+	// Copy whatever we get into an array of floats
+	std::valarray<float> verticesFormatted(vertices.size());
+	for(int i = 0; i < vertices.size(); ++i){
+		verticesFormatted[i] = vertices[i];	
+	}		
+	const int numVertices = verticesFormatted.size()/3;
 
-    return 0;
+	/*
+ 	* Copy the vertex values into a buffer on the GPU for fast drawing
+ 	*/
+
+	/* Create a variable to hold the VBO identifier */
+	GLuint curveVBO;
+	 
+	/* This is a handle to the shader program */
+	GLuint shaderProgram;
+
+	/* These pointers will receive the contents of our shader source code files */
+	GLchar *vertexSource, *fragmentSource;
+
+	/* These are handles used to reference the shaders */
+	GLuint vertexShader, fragmentShader;
+
+	const unsigned int shaderAttribute = 0;
+
+	/*---------------------- Initialise VBO - (Note: do only once, at start of program) ---------------------*/
+	/* Create a new VBO and use the variable "curveVBO" to store the VBO id */
+	glGenBuffers(1, &curveVBO);
+
+	/* Make the new VBO active */
+	glBindBuffer(GL_ARRAY_BUFFER, curveVBO);
+
+	/* Upload vertex data to the video device */
+	glBufferData(GL_ARRAY_BUFFER, verticesFormatted.size()*sizeof(float), &verticesFormatted[0], GL_STATIC_DRAW);
+
+	/* Specify that our coordinate data is going into attribute index 0(shaderAttribute), and contains three floats per vertex */
+	glVertexAttribPointer(shaderAttribute, 3, GL_FLOAT, GL_FALSE, 0, 0);
+
+	/* Enable attribute index 0(shaderAttribute) as being used */
+	glEnableVertexAttribArray(shaderAttribute);
+
+	/* Make the new VBO active. */
+	glBindBuffer(GL_ARRAY_BUFFER, curveVBO);
+	/*-------------------------------------------------------------------------------------------------------*/
+
+	/*--------------------- Load Vertex and Fragment shaders from files and compile them --------------------*/
+	/* Read our shaders into the appropriate buffers */
+	vertexSource = filetobuf("plot3dVertexShader.vert");
+	fragmentSource = filetobuf("plot3dFragmentShader.frag");
+
+	/* Assign our handles a "name" to new shader objects */
+	vertexShader = glCreateShader(GL_VERTEX_SHADER);
+	fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
+
+	/* Associate the source code buffers with each handle */
+	glShaderSource(vertexShader, 1, (const GLchar**)&vertexSource, 0);
+	glShaderSource(fragmentShader, 1, (const GLchar**)&fragmentSource, 0);
+
+	/* Free the temporary allocated memory */
+	free(vertexSource);
+	free(fragmentSource);
+
+	/* Compile our shader objects */
+	glCompileShader(vertexShader);
+	glCompileShader(fragmentShader);
+	/*-------------------------------------------------------------------------------------------------------*/
+
+	/*-------------------- Create shader program, attach shaders to it and then link it ---------------------*/
+	/* Assign our program handle a "name" */
+	shaderProgram = glCreateProgram();
+
+	/* Attach our shaders to our program */
+	glAttachShader(shaderProgram, vertexShader);
+	glAttachShader(shaderProgram, fragmentShader);
+
+	/* Bind attribute index 0 (shaderAttribute) to in_Position*/
+	/* "in_Position" will represent "verticesFormatted" array's contents in the vertex shader */
+	glBindAttribLocation(shaderProgram, shaderAttribute, "in_Position");
+
+	/* Link shader program*/
+	glLinkProgram(shaderProgram);
+	/*-------------------------------------------------------------------------------------------------------*/
+
+	/* Set shader program as being actively used */
+	glUseProgram(shaderProgram);
+
+	while(not terminate){
+		UpdateTimeCounter();
+		CalculateFPS();
+		RotateModel();
+		ExposeFunc(numVertices);
+		usleep(1000);
+		CheckKeyboard();
+	}
 }
+

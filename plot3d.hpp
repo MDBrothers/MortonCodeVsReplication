@@ -1,7 +1,15 @@
 #ifndef PLOT3D_H
 #define PLOT3D_H
 
-#include<vector>
+#include<X11/Xlib.h>
+#include<X11/XKBlib.h>
+
+#include<GL/gl.h>
+#include<GL/glx.h>
+#include<GL/glext.h>
+#include<GL/glu.h>
+
+#include<valarray>
 #include<stdio.h>
 #include<stdlib.h>
 #include<string.h>
@@ -9,11 +17,6 @@
 #include<math.h>
 #include<time.h>
 #include<sys/time.h>
-#include<X11/Xlib.h>
-#include<X11/XKBlib.h>
-#include<GL/glx.h>
-#include<GL/glext.h>
-#include<GL/glu.h>
 #include<iostream>
 #include<sstream>
 #include<string>
@@ -21,5 +24,6 @@
 #include<algorithm>
 #include <cstdlib>
 
-int plotWithNeighborhoods(const std::vector<float>& vertices, std::vector<std::vector<int> >& neighborhoods);
+void plotCurve(const std::valarray<double>& vertices); 
+
 #endif

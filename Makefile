@@ -4,20 +4,8 @@ THIRD_PARTY = -I/usr/local/hdf5/include -I/usr/local/trilinos/include -I/usr/loc
 compile_tests: 
 	data_test
 
-map_test: just_the_map.cpp
-	mpicxx $(CXX_FLAGS) -o map_test just_the_map.cpp $(THIRD_PARTY)
-
-hash_test: hashes_for_enums.cpp
-	mpicxx $(CXX_FLAGS) -o hash_test hashes_for_enums.cpp $(THIRD_PARTY)
-
-data_test: libdata.so data_test.cpp data.cpp libplot3d.so
-	mpicxx $(CXX_FLAGS) -o data_test data_test.cpp -L./ -ldata -lplot3d $(THIRD_PARTY)
-
-libneighborhoodkernels.so: kernels.hpp neighborhood_kernels.cpp 
-	mpicxx $(CXX_FLAGS) -shared -fPIC neighborhood_kernels.cpp -o libneighborhoodkernels.so
-
-libplot3d.so:
-	mpicxx $(CXX_FLAGS) -shared -fPIC plot3d.cpp -o libplot3d.so -lGLU -lGL
+libplot3d.so: plot3d.cpp plot3d.hpp plot3dVertexShader.vert plot3dFragmentShader.frag
+	mpicxx $(CXX_FLAGS) -shared -fPIC plot3d.cpp -o libplot3d.so -lGLU -lGL -DGL_GLEXT_PROTOTYPES
 
 libdata.so: data.cpp data.hpp
 	mpicxx $(CXX_FLAGS) -shared -fPIC data.cpp -o libdata.so $(THIRD_PARTY)
