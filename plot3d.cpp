@@ -154,7 +154,6 @@ void ExposeFunc(const int numVertices) {
 
 
 //Update graphics system stats
-    sprintf(info_string, "<up,down,left,right> rotate model * <F1> stop rotation ");
 
 //Swap display buffer with draw buffer
     glXSwapBuffers(dpy, win);
@@ -275,6 +274,8 @@ void CheckKeyboard() {
 }
 
 void plotCurve(const std::valarray<double>& vertices){
+   	printf("<q,e> zoom, <w,a,s,d> translate, <7,5,3> xyz rot, F1 reset rot, ESC quit\n");
+
 	CreateWindow();
 	SetupGL();
 
@@ -334,6 +335,8 @@ void plotCurve(const std::valarray<double>& vertices){
 	rotZMatLoc = glGetUniformLocation(programId,"rotZMat");
 	transMatLoc = glGetUniformLocation(programId, "transMat");
 	modelViewMatLoc = glGetUniformLocation(programId, "modelViewMat");
+
+
 
 	while(not terminate){
 		// Upload update uniform matrices
