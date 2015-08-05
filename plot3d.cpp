@@ -145,7 +145,7 @@ void ExposeFunc(const int numVertices) {
     buildPerspProjMat(projMat, 60.f, aspect_ratio, 1.f, 1000.f);
 
 //Draw the model
-    glPointSize(2.0);
+    glPointSize(3.0);
     glLineWidth(2.0);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     if(plotStyle == 0) glDrawArrays(GL_LINE_STRIP, 0, numVertices);

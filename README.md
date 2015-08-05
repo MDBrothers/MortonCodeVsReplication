@@ -1,4 +1,10 @@
 # MortonCodeVsReplication
+## System requirements:
+### X11 development libraries
+### Opengl development libraries glu, glew, gl
+### Opengl 4.3 or greater 
+### GPU supporting glsl 430 or greater
+
 ## Description
 Buiding upon LocalDuplicationMwe, this project compares the effect of using Morton Code aka 'z-ordering' against local data replication for enhancing index locality on kernel evalution performance for n-body and multibody simulation codes. Both serial and shared memory parallel performance are compared. The shared memory implemtations are written using OpenCL 1.2 and are performed on a CPU system and a GPU system. No strong attempt at optimising the serial or parallel implementations has been done except enforcing atomic read/write operations when necessary for test subjects lacking local data replication. Obviously this harms performance for those subjects, however, this is a key point in the present discussion. Additionally the relationship between cache miss rate and execution time is analyzed.
 

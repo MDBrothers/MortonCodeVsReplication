@@ -183,17 +183,15 @@ void showbits(scalarT x)
 #define MAX 4 
 int main(int argc, char *argv[]) {
     std::valarray<double> vertices(MAX*MAX*MAX*3);    
-    unsigned long long con=1;
-    size_t position;
 
     // Encode and decode
     for(size_t i = 0; i < MAX; i++){
         for(size_t j = 0; j < MAX; j++){
             for(size_t k = 0; k < MAX; k++){
 		size_t position(3*mortonEncode_LUT(i,j,k));
-                vertices[position] = i;
-		vertices[position+1] = j;
-		vertices[position+2] = k;
+                vertices[position] = i*1.f/MAX;
+		vertices[position+1] = j*1.f/MAX;
+		vertices[position+2] = k*1.f/MAX;
             }
         }
     }
