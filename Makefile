@@ -4,6 +4,9 @@ THIRD_PARTY = -I/usr/local/hdf5/include -I/usr/local/trilinos/include -I/usr/loc
 compile_tests: 
 	data_test
 
+morton: libplot3d.so mortonCodeGenerator.cxx
+	g++ $(CXX_FLAGS) mortonCodeGenerator.cxx -L. -I. -lplot3d -lGLU -lGL -DGL_GLEXT_PROTOTYPES
+
 libplot3d.so: plot3d.cpp plot3d.hpp vertexShader.glsl fragmentShader.glsl
 	mpicxx $(CXX_FLAGS) -shared -fPIC plot3d.cpp -o libplot3d.so -lGLU -lGL -DGL_GLEXT_PROTOTYPES
 

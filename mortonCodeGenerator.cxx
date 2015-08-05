@@ -29,6 +29,17 @@ inline uint64_t mortonEncode_magicbits(unsigned int x, unsigned int y, unsigned 
     return answer;
 }
 
+unsigned long long spreadBits(unsigned long long x)
+{
+	x=(x|(x<<20))&0x000001FFC00003FF;
+	x=(x|(x<<10))&0x0007E007C00F801F;
+	x=(x|(x<<4))&0x00786070C0E181C3;
+	x=(x|(x<<2))&0x0199219243248649;
+	x=(x|(x<<2))&0x0649249249249249;
+	x=(x|(x<<2))&0x1249249249249249;
+	return x;
+}
+
 
 static const uint32_t morton256_x[256] =
 {
@@ -169,19 +180,20 @@ void showbits(scalarT x)
     	printf("\n");
 }
 
-#define MAX 8 
+#define MAX 4 
 int main(int argc, char *argv[]) {
     std::valarray<double> vertices(MAX*MAX*MAX*3);    
+    unsigned long long con=1;
+    size_t position;
 
     // Encode and decode
     for(size_t i = 0; i < MAX; i++){
         for(size_t j = 0; j < MAX; j++){
             for(size_t k = 0; k < MAX; k++){
-		size_t position(mortonEncode_LUT(i,j,k));
-                vertices[position] = i*.1;
-		vertices[position+1] = j*.1;
-		vertices[position+2] = k*.1;
-		//showbits<uint64_t>(mortonEncode_LUT(i,j,k));
+		size_t position(3*mortonEncode_LUT(i,j,k));
+                vertices[position] = i;
+		vertices[position+1] = j;
+		vertices[position+2] = k;
             }
         }
     }
